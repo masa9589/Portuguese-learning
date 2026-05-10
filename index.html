@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portuguese Lesson Quiz</title>
+
+<style>
+body{
+  font-family:Arial,sans-serif;
+  background:#f5f5f5;
+  margin:0;
+  padding:20px;
+}
+
+.container{
+  max-width:600px;
+  margin:auto;
+}
+
+.card{
+  background:white;
+  border-radius:16px;
+  padding:20px;
+  margin-top:20px;
+  box-shadow:0 2px 10px rgba(0,0,0,0.1);
+}
+
+h1{
+  font-size:28px;
+}
+
+.question{
+  font-size:28px;
+  margin:20px 0;
+  font-weight:bold;
+}
+
+.answer{
+  font-size:22px;
+  color:green;
+  display:none;
+  margin-bottom:20px;
+}
+
+button{
+  width:100%;
+  padding:14px;
+  margin-top:10px;
+  border:none;
+  border-radius:10px;
+  font-size:16px;
+  cursor:pointer;
+}
+
+.show{
+  background:black;
+  color:white;
+}
+
+.correct{
+  background:#d4edda;
+}
+
+.wrong{
+  background:#f8d7da;
+}
+
+.next{
+  background:#ddd;
+}
+
+.stats{
+  line-height:1.8;
+}
+
+select{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  font-size:16px;
+}
+
+.small{
+  font-size:13px;
+  color:#666;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>ポルトガル語 復習アプリ</h1>
+
+<div class="card">
+
+<label>授業を選択</label>
+
+<select id="lessonSelect" onchange="nextQuestion()">
+
+<option value="all">全部</option>
+
+<option value="Saudacoes">挨拶</option>
+<option value="SER">SER動詞</option>
+<option value="ESTAR">ESTAR動詞</option>
+<option value="Adjetivos">形容詞</option>
+<option value="Numerais">数字</option>
+<option value="Horas">時間</option>
+<option value="Regulares">規則動詞</option>
+<option value="TER">TER動詞</option>
+<option value="Pronomes">疑問詞</option>
+<option value="IR">IR動詞</option>
+<option value="VIR">VIR動詞</option>
+<option value="PODER">PODER/SABER</option>
+<option value="Transportes">交通</option>
+<option value="Descricao">身体描写</option>
+<option value="Roupas">服飾</option>
+
+</select>
+
+</div>
+
+<div class="card">
+
+<div id="lessonName"></div>
+
+<div class="question" id="question">
+問題
+</div>
+
+<div class="answer" id="answer">
+答え
+</div>
+
+<button class="show" onclick="showAnswer()">
+答えを見る
+</button>
+
+<button class="correct" onclick="mark(true)">
+正解
+</button>
+
+<button class="wrong" onclick="mark(false)">
+不正解
+</button>
+
+<button class="next" onclick="nextQuestion()">
+次の問題
+</button>
+
+</div>
+
+<div class="card stats">
+
+学習数：
+<span id="total">0</span>
+<br>
+
+正解率：
+<span id="rate">0%</span>
+<br>
+
+間違い：
+<span id="mistakes">0</span>
+<br>
+
+学習時間：
+<span id="time">0分</span>
+
+</div>
+
+<div class="card">
+
+<button onclick="resetStats()">
+履歴リセット
+</button>
+
+<div class="small">
+履歴はブラウザ内に保存されます
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const questions = [
+
+{
+lesson:'Saudacoes',
+q:'おはよう',
+a:'Bom dia!'
+},
+
+{
+lesson:'Saudacoes',
+q:'こんばんは',
+a:'Boa noite!'
+},
+
+{
+lesson:'Saudacoes',
+q:'ありがとう',
+a:'Obrigado(a)'
+},
+
+{
+lesson:'SER',
+q:'Eu ___ japonês.',
+a:'sou'
+},
+
+{
+lesson:'SER',
+q:'Nós ___ japoneses.',
+a:'somos'
+},
+
+{
+lesson:'SER',
+q:'あなたはどこの出身ですか？',
+a:'De onde você é?'
+},
+
+{
+lesson:'ESTAR',
+q:'私は疲れています',
+a:'Eu estou cansado.'
+},
+
+{
+lesson:'ESTAR',
+q:'頭が痛い',
+a:'Estou com dor de cabeça.'
+},
+
+{
+lesson:'ESTAR',
+q:'彼らは空港にいます',
+a:'Eles estão no aeroporto.'
+},
+
+{
+lesson:'Adjetivos',
+q:'新しい',
+a:'novo / nova'
+},
+
+{
+lesson:'Adjetivos',
+q:'古い',
+a:'antigo / antiga'
+},
+
+{
+lesson:'Adjetivos',
+q:'美味しい',
+a:'gostoso / gostosa'
+},
+
+{
+lesson:'Numerais',
+q:'38',
+a:'trinta e oito'
+},
+
+{
+lesson:'Numerais',
+q:'100',
+a:'cem'
+},
+
+{
+lesson:'Numerais',
+q:'1,000',
+a:'mil'
+},
+
+{
+lesson:'Horas',
+q:'9:30',
+a:'São nove horas e meia.'
+},
+
+{
+lesson:'Horas',
+q:'何時ですか？',
+a:'Que horas são?'
+},
+
+{
+lesson:'Horas',
+q:'正午',
+a:'É meio-dia.'
+},
+
+{
+lesson:'Regulares',
+q:'falar',
+a:'話す'
+},
+
+{
+lesson:'Regulares',
+q:'beber',
+a:'飲む'
+},
+
+{
+lesson:'Regulares',
+q:'partir',
+a:'出発する'
+},
+
+{
+lesson:'TER',
+q:'私は40歳です',
+a:'Eu tenho 40 anos.'
+},
+
+{
+lesson:'TER',
+q:'私は新しいiPhoneを持っています',
+a:'Eu tenho um iPhone novo.'
+},
+
+{
+lesson:'Pronomes',
+q:'どこ？',
+a:'Onde?'
+},
+
+{
+lesson:'Pronomes',
+q:'誰？',
+a:'Quem?'
+},
+
+{
+lesson:'Pronomes',
+q:'なぜ？',
+a:'Por que?'
+},
+
+{
+lesson:'IR',
+q:'私はブラジルへ行きます',
+a:'Eu vou para o Brasil.'
+},
+
+{
+lesson:'IR',
+q:'私は地下鉄で行きます',
+a:'Eu vou de metrô.'
+},
+
+{
+lesson:'IR',
+q:'〜しましょう',
+a:'Vamos + 動詞'
+},
+
+{
+lesson:'VIR',
+q:'私は電車で来ます',
+a:'Eu venho de trem.'
+},
+
+{
+lesson:'VIR',
+q:'彼らはここへ来ます',
+a:'Eles vêm para cá.'
+},
+
+{
+lesson:'PODER',
+q:'〜できます',
+a:'poder'
+},
+
+{
+lesson:'PODER',
+q:'私はポルトガル語を話せます',
+a:'Eu posso falar português.'
+},
+
+{
+lesson:'PODER',
+q:'私は泳げます',
+a:'Eu sei nadar.'
+},
+
+{
+lesson:'Transportes',
+q:'空港',
+a:'aeroporto'
+},
+
+{
+lesson:'Transportes',
+q:'地下鉄',
+a:'metrô'
+},
+
+{
+lesson:'Transportes',
+q:'警察署',
+a:'delegacia de polícia'
+},
+
+{
+lesson:'Descricao',
+q:'黒髪',
+a:'cabelos pretos'
+},
+
+{
+lesson:'Descricao',
+q:'白い肌',
+a:'pele branca'
+},
+
+{
+lesson:'Roupas',
+q:'シャツ',
+a:'camisa'
+},
+
+{
+lesson:'Roupas',
+q:'スーツ',
+a:'terno'
+},
+
+{
+lesson:'Roupas',
+q:'靴',
+a:'sapatos'
+}
+
+];
+
+let current;
+
+let stats = JSON.parse(localStorage.getItem('ptQuizStats')) || {
+total:0,
+correct:0,
+mistakes:[],
+seconds:0
+};
+
+function saveStats(){
+localStorage.setItem('ptQuizStats',JSON.stringify(stats));
+}
+
+function getPool(){
+
+const lesson =
+document.getElementById('lessonSelect').value;
+
+if(lesson === 'all'){
+return questions;
+}
+
+return questions.filter(q =>
+q.lesson === lesson
+);
+
+}
+
+function nextQuestion(){
+
+const pool = getPool();
+
+current =
+pool[Math.floor(Math.random()*pool.length)];
+
+document.getElementById('lessonName').innerText =
+current.lesson;
+
+document.getElementById('question').innerText =
+current.q;
+
+document.getElementById('answer').innerText =
+current.a;
+
+document.getElementById('answer').style.display =
+'none';
+
+}
+
+function showAnswer(){
+
+document.getElementById('answer').style.display =
+'block';
+
+}
+
+function mark(correct){
+
+stats.total++;
+
+if(correct){
+
+stats.correct++;
+
+}else{
+
+stats.mistakes.push(current.q);
+
+}
+
+saveStats();
+
+updateStats();
+
+nextQuestion();
+
+}
+
+function updateStats(){
+
+document.getElementById('total').innerText =
+stats.total;
+
+const rate =
+stats.total
+? Math.round(stats.correct / stats.total * 100)
+: 0;
+
+document.getElementById('rate').innerText =
+rate + '%';
+
+document.getElementById('mistakes').innerText =
+stats.mistakes.length;
+
+document.getElementById('time').innerText =
+Math.floor(stats.seconds / 60) + '分';
+
+}
+
+function resetStats(){
+
+stats = {
+total:0,
+correct:0,
+mistakes:[],
+seconds:0
+};
+
+saveStats();
+
+updateStats();
+
+}
+
+setInterval(() => {
+
+stats.seconds++;
+
+saveStats();
+
+updateStats();
+
+},1000);
+
+updateStats();
+
+nextQuestion();
+
+</script>
+
+</body>
+</html>
