@@ -3,44 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portuguese Lesson Quiz</title>
+<title>Portuguese Review App</title>
 
 <style>
+
 body{
   font-family:Arial,sans-serif;
-  background:#f5f5f5;
+  background:#f4f4f4;
   margin:0;
   padding:20px;
 }
 
 .container{
-  max-width:600px;
+  max-width:700px;
   margin:auto;
 }
 
 .card{
   background:white;
-  border-radius:16px;
   padding:20px;
+  border-radius:16px;
   margin-top:20px;
   box-shadow:0 2px 10px rgba(0,0,0,0.1);
 }
 
 h1{
-  font-size:28px;
+  font-size:32px;
 }
 
 .question{
   font-size:28px;
-  margin:20px 0;
   font-weight:bold;
+  margin:20px 0;
+  line-height:1.5;
 }
 
 .answer{
-  font-size:22px;
-  color:green;
   display:none;
-  margin-bottom:20px;
+  font-size:24px;
+  color:green;
+  margin-bottom:15px;
+  line-height:1.5;
+}
+
+.explanation{
+  display:none;
+  background:#f0f8ff;
+  padding:15px;
+  border-radius:10px;
+  margin-top:10px;
+  line-height:1.7;
+  white-space:pre-line;
 }
 
 button{
@@ -70,21 +83,32 @@ button{
   background:#ddd;
 }
 
-.stats{
-  line-height:1.8;
-}
-
 select{
   width:100%;
   padding:12px;
   border-radius:10px;
+  margin-top:10px;
   font-size:16px;
+}
+
+.stats{
+  line-height:1.8;
 }
 
 .small{
   font-size:13px;
   color:#666;
 }
+
+.badge{
+  display:inline-block;
+  background:#eee;
+  padding:6px 10px;
+  border-radius:8px;
+  margin-right:8px;
+  font-size:14px;
+}
+
 </style>
 </head>
 
@@ -96,27 +120,40 @@ select{
 
 <div class="card">
 
-<label>授業を選択</label>
+<div class="badge" id="lessonBadge">授業</div>
+<div class="badge" id="typeBadge">形式</div>
 
-<select id="lessonSelect" onchange="nextQuestion()">
+<select id="lessonSelect" onchange="resetQueue()">
 
 <option value="all">全部</option>
 
-<option value="Saudacoes">挨拶</option>
 <option value="SER">SER動詞</option>
 <option value="ESTAR">ESTAR動詞</option>
-<option value="Adjetivos">形容詞</option>
-<option value="Numerais">数字</option>
-<option value="Horas">時間</option>
-<option value="Regulares">規則動詞</option>
-<option value="TER">TER動詞</option>
-<option value="Pronomes">疑問詞</option>
 <option value="IR">IR動詞</option>
 <option value="VIR">VIR動詞</option>
-<option value="PODER">PODER/SABER</option>
-<option value="Transportes">交通</option>
-<option value="Descricao">身体描写</option>
-<option value="Roupas">服飾</option>
+<option value="PODER">PODER</option>
+<option value="SABER">SABER</option>
+<option value="CONSEGUIR">CONSEGUIR</option>
+<option value="CONHECER">CONHECER</option>
+<option value="PREFERIR">PREFERIR</option>
+<option value="TER">TER動詞</option>
+<option value="REGULAR">規則動詞</option>
+<option value="HORAS">時間</option>
+<option value="NUMERAIS">数字</option>
+<option value="ADJETIVOS">形容詞</option>
+
+</select>
+
+<select id="typeSelect" onchange="resetQueue()">
+
+<option value="all">全部形式</option>
+
+<option value="vocab">単語</option>
+<option value="fill">穴埋め</option>
+<option value="conjugation">活用</option>
+<option value="translation">和訳</option>
+<option value="composition">作文</option>
+<option value="conversation">会話</option>
 
 </select>
 
@@ -124,14 +161,16 @@ select{
 
 <div class="card">
 
-<div id="lessonName"></div>
-
 <div class="question" id="question">
 問題
 </div>
 
 <div class="answer" id="answer">
 答え
+</div>
+
+<div class="explanation" id="explanation">
+解説
 </div>
 
 <button class="show" onclick="showAnswer()">
@@ -190,296 +229,386 @@ select{
 const questions = [
 
 {
-lesson:'Saudacoes',
-q:'おはよう',
-a:'Bom dia!'
-},
-
-{
-lesson:'Saudacoes',
-q:'こんばんは',
-a:'Boa noite!'
-},
-
-{
-lesson:'Saudacoes',
-q:'ありがとう',
-a:'Obrigado(a)'
+lesson:'SER',
+type:'fill',
+q:'Eu ____ japonês.',
+a:'sou',
+exp:'SER = 性質・国籍・職業など。\njaponês は国籍。'
 },
 
 {
 lesson:'SER',
-q:'Eu ___ japonês.',
-a:'sou'
+type:'conjugation',
+q:'nós + ser',
+a:'somos',
+exp:'SER は最重要不規則動詞。\nsou / é / somos / são'
 },
 
 {
 lesson:'SER',
-q:'Nós ___ japoneses.',
-a:'somos'
-},
-
-{
-lesson:'SER',
-q:'あなたはどこの出身ですか？',
-a:'De onde você é?'
+type:'translation',
+q:'De onde você é?',
+a:'あなたはどこの出身ですか？',
+exp:'SER + de\n出身を表す。'
 },
 
 {
 lesson:'ESTAR',
-q:'私は疲れています',
-a:'Eu estou cansado.'
+type:'fill',
+q:'Eu ____ cansado.',
+a:'estou',
+exp:'ESTAR = 一時的状態。\ncansado は疲れている状態。'
 },
 
 {
 lesson:'ESTAR',
-q:'頭が痛い',
-a:'Estou com dor de cabeça.'
+type:'translation',
+q:'Estou com fome.',
+a:'お腹が空いています。',
+exp:'ESTAR COM + 名詞\n感覚・体調表現。'
 },
 
 {
 lesson:'ESTAR',
-q:'彼らは空港にいます',
-a:'Eles estão no aeroporto.'
+type:'conversation',
+q:'A: Tudo bem?\nB: ?',
+a:'Tudo bem!',
+exp:'日常超頻出表現。'
 },
 
 {
-lesson:'Adjetivos',
-q:'新しい',
-a:'novo / nova'
+lesson:'IR',
+type:'translation',
+q:'Eu vou para o Brasil.',
+a:'私はブラジルへ行きます。',
+exp:'IR = 話者から離れる。'
 },
 
 {
-lesson:'Adjetivos',
-q:'古い',
-a:'antigo / antiga'
+lesson:'IR',
+type:'vocab',
+q:'地下鉄で行く',
+a:'ir de metrô',
+exp:'IR DE + 交通手段'
 },
 
 {
-lesson:'Adjetivos',
-q:'美味しい',
-a:'gostoso / gostosa'
+lesson:'IR',
+type:'conversation',
+q:'A: Vamos beber cerveja?\nB: ?',
+a:'Vamos!',
+exp:'Vamos + 動詞\n「〜しましょう」'
 },
 
 {
-lesson:'Numerais',
-q:'38',
-a:'trinta e oito'
+lesson:'VIR',
+type:'translation',
+q:'Eu venho de trem.',
+a:'私は電車で来ます。',
+exp:'VIR = 話者側へ来る。'
 },
 
 {
-lesson:'Numerais',
-q:'100',
-a:'cem'
+lesson:'VIR',
+type:'fill',
+q:'Eles ____ para cá.',
+a:'vêm',
+exp:'vir の複数形。\nvem → vêm'
 },
 
 {
-lesson:'Numerais',
-q:'1,000',
-a:'mil'
+lesson:'VIR',
+type:'conversation',
+q:'A: Você vem de metrô?\nB: ?',
+a:'Venho.',
+exp:'VIR DE + 交通手段'
 },
 
 {
-lesson:'Horas',
-q:'9:30',
-a:'São nove horas e meia.'
+lesson:'PODER',
+type:'translation',
+q:'Você pode abrir a janela?',
+a:'窓を開けてもらえますか？',
+exp:'PODER = 許可・依頼'
 },
 
 {
-lesson:'Horas',
-q:'何時ですか？',
-a:'Que horas são?'
+lesson:'PODER',
+type:'conjugation',
+q:'eu + poder',
+a:'posso',
+exp:'不規則活用。\neu だけ posso'
 },
 
 {
-lesson:'Horas',
-q:'正午',
-a:'É meio-dia.'
+lesson:'PODER',
+type:'conversation',
+q:'A: Você pode ajudar?\nB: ?',
+a:'Posso.',
+exp:'依頼への応答。'
 },
 
 {
-lesson:'Regulares',
-q:'falar',
-a:'話す'
+lesson:'SABER',
+type:'translation',
+q:'Eu sei nadar.',
+a:'私は泳げます。',
+exp:'SABER = 技能としてできる'
 },
 
 {
-lesson:'Regulares',
+lesson:'SABER',
+type:'fill',
+q:'Eu ____ falar português.',
+a:'sei',
+exp:'SABER + 動詞'
+},
+
+{
+lesson:'SABER',
+type:'conversation',
+q:'A: Você sabe cozinhar?\nB: ?',
+a:'Sei.',
+exp:'技能表現'
+},
+
+{
+lesson:'CONSEGUIR',
+type:'translation',
+q:'Eu consigo ler isso.',
+a:'私はそれを読めます。',
+exp:'努力して可能。\nなんとかできる。'
+},
+
+{
+lesson:'CONSEGUIR',
+type:'conjugation',
+q:'eu + conseguir',
+a:'consigo',
+exp:'CONSEGUIR 不規則活用'
+},
+
+{
+lesson:'CONHECER',
+type:'translation',
+q:'Você conhece a Japan House?',
+a:'Japan Houseを知っていますか？',
+exp:'体験的に知る。\n行ったことがある。'
+},
+
+{
+lesson:'PREFERIR',
+type:'conversation',
+q:'A: O que você prefere?\nB: ?',
+a:'Eu prefiro café.',
+exp:'PREFERIR = 好む'
+},
+
+{
+lesson:'TER',
+type:'translation',
+q:'Eu tenho 40 anos.',
+a:'私は40歳です。',
+exp:'TER = 年齢表現'
+},
+
+{
+lesson:'TER',
+type:'fill',
+q:'Eu ____ um iPhone novo.',
+a:'tenho',
+exp:'TER = 持っている'
+},
+
+{
+lesson:'REGULAR',
+type:'vocab',
 q:'beber',
-a:'飲む'
+a:'飲む',
+exp:'-ER 規則動詞'
 },
 
 {
-lesson:'Regulares',
-q:'partir',
-a:'出発する'
+lesson:'REGULAR',
+type:'conjugation',
+q:'eu + estudar',
+a:'estudo',
+exp:'-AR 規則動詞'
 },
 
 {
-lesson:'TER',
-q:'私は40歳です',
-a:'Eu tenho 40 anos.'
+lesson:'REGULAR',
+type:'composition',
+q:'私は毎日ポルトガル語を勉強します。',
+a:'Eu estudo português todos os dias.',
+exp:'todos os dias = 毎日'
 },
 
 {
-lesson:'TER',
-q:'私は新しいiPhoneを持っています',
-a:'Eu tenho um iPhone novo.'
+lesson:'HORAS',
+type:'translation',
+q:'9:30',
+a:'São nove horas e meia.',
+exp:'meia = 半分'
 },
 
 {
-lesson:'Pronomes',
-q:'どこ？',
-a:'Onde?'
+lesson:'HORAS',
+type:'translation',
+q:'何時ですか？',
+a:'Que horas são?',
+exp:'超頻出'
 },
 
 {
-lesson:'Pronomes',
-q:'誰？',
-a:'Quem?'
+lesson:'HORAS',
+type:'conversation',
+q:'A: Que horas são?\nB: ?',
+a:'São duas horas.',
+exp:'時間表現'
 },
 
 {
-lesson:'Pronomes',
-q:'なぜ？',
-a:'Por que?'
+lesson:'NUMERAIS',
+type:'vocab',
+q:'38',
+a:'trinta e oito',
+exp:'30 + 8'
 },
 
 {
-lesson:'IR',
-q:'私はブラジルへ行きます',
-a:'Eu vou para o Brasil.'
+lesson:'NUMERAIS',
+type:'vocab',
+q:'1000',
+a:'mil',
+exp:'1000 = mil'
 },
 
 {
-lesson:'IR',
-q:'私は地下鉄で行きます',
-a:'Eu vou de metrô.'
+lesson:'NUMERAIS',
+type:'translation',
+q:'R$5,99',
+a:'cinco reais e noventa e nove centavos',
+exp:'ブラジルのお金表現'
 },
 
 {
-lesson:'IR',
-q:'〜しましょう',
-a:'Vamos + 動詞'
+lesson:'ADJETIVOS',
+type:'translation',
+q:'um grande homem',
+a:'偉大な男性',
+exp:'grande が前\n= 偉大な'
 },
 
 {
-lesson:'VIR',
-q:'私は電車で来ます',
-a:'Eu venho de trem.'
+lesson:'ADJETIVOS',
+type:'translation',
+q:'um homem grande',
+a:'大きな男性',
+exp:'grande が後ろ\n= 大きい'
 },
 
 {
-lesson:'VIR',
-q:'彼らはここへ来ます',
-a:'Eles vêm para cá.'
-},
-
-{
-lesson:'PODER',
-q:'〜できます',
-a:'poder'
-},
-
-{
-lesson:'PODER',
-q:'私はポルトガル語を話せます',
-a:'Eu posso falar português.'
-},
-
-{
-lesson:'PODER',
-q:'私は泳げます',
-a:'Eu sei nadar.'
-},
-
-{
-lesson:'Transportes',
-q:'空港',
-a:'aeroporto'
-},
-
-{
-lesson:'Transportes',
-q:'地下鉄',
-a:'metrô'
-},
-
-{
-lesson:'Transportes',
-q:'警察署',
-a:'delegacia de polícia'
-},
-
-{
-lesson:'Descricao',
-q:'黒髪',
-a:'cabelos pretos'
-},
-
-{
-lesson:'Descricao',
-q:'白い肌',
-a:'pele branca'
-},
-
-{
-lesson:'Roupas',
-q:'シャツ',
-a:'camisa'
-},
-
-{
-lesson:'Roupas',
-q:'スーツ',
-a:'terno'
-},
-
-{
-lesson:'Roupas',
-q:'靴',
-a:'sapatos'
+lesson:'ADJETIVOS',
+type:'vocab',
+q:'疲れている',
+a:'cansado',
+exp:'状態形容詞'
 }
 
 ];
 
+let queue = [];
 let current;
 
-let stats = JSON.parse(localStorage.getItem('ptQuizStats')) || {
+let stats = JSON.parse(localStorage.getItem('ptReviewStats')) || {
 total:0,
 correct:0,
-mistakes:[],
+mistakes:0,
 seconds:0
 };
 
 function saveStats(){
-localStorage.setItem('ptQuizStats',JSON.stringify(stats));
+localStorage.setItem(
+'ptReviewStats',
+JSON.stringify(stats)
+);
 }
 
-function getPool(){
+function getFilteredQuestions(){
 
 const lesson =
 document.getElementById('lessonSelect').value;
 
-if(lesson === 'all'){
-return questions;
+const type =
+document.getElementById('typeSelect').value;
+
+return questions.filter(q => {
+
+const lessonMatch =
+lesson === 'all' || q.lesson === lesson;
+
+const typeMatch =
+type === 'all' || q.type === type;
+
+return lessonMatch && typeMatch;
+
+});
+
 }
 
-return questions.filter(q =>
-q.lesson === lesson
+function shuffle(array){
+
+for(let i=array.length-1;i>0;i--){
+
+const j =
+Math.floor(Math.random()*(i+1));
+
+[array[i],array[j]] =
+[array[j],array[i]];
+
+}
+
+return array;
+
+}
+
+function resetQueue(){
+
+queue = shuffle(
+[...getFilteredQuestions()]
 );
+
+nextQuestion();
 
 }
 
 function nextQuestion(){
 
-const pool = getPool();
+if(queue.length === 0){
 
-current =
-pool[Math.floor(Math.random()*pool.length)];
+queue = shuffle(
+[...getFilteredQuestions()]
+);
 
-document.getElementById('lessonName').innerText =
+}
+
+current = queue.pop();
+
+if(!current){
+
+document.getElementById('question').innerText =
+'問題がありません';
+
+return;
+
+}
+
+document.getElementById('lessonBadge').innerText =
 current.lesson;
+
+document.getElementById('typeBadge').innerText =
+current.type;
 
 document.getElementById('question').innerText =
 current.q;
@@ -487,7 +616,13 @@ current.q;
 document.getElementById('answer').innerText =
 current.a;
 
+document.getElementById('explanation').innerText =
+current.exp;
+
 document.getElementById('answer').style.display =
+'none';
+
+document.getElementById('explanation').style.display =
 'none';
 
 }
@@ -497,6 +632,9 @@ function showAnswer(){
 document.getElementById('answer').style.display =
 'block';
 
+document.getElementById('explanation').style.display =
+'block';
+
 }
 
 function mark(correct){
@@ -504,13 +642,9 @@ function mark(correct){
 stats.total++;
 
 if(correct){
-
 stats.correct++;
-
 }else{
-
-stats.mistakes.push(current.q);
-
+stats.mistakes++;
 }
 
 saveStats();
@@ -535,10 +669,11 @@ document.getElementById('rate').innerText =
 rate + '%';
 
 document.getElementById('mistakes').innerText =
-stats.mistakes.length;
+stats.mistakes;
 
 document.getElementById('time').innerText =
-Math.floor(stats.seconds / 60) + '分';
+Math.floor(stats.seconds / 60)
++ '分';
 
 }
 
@@ -547,7 +682,7 @@ function resetStats(){
 stats = {
 total:0,
 correct:0,
-mistakes:[],
+mistakes:0,
 seconds:0
 };
 
@@ -569,7 +704,7 @@ updateStats();
 
 updateStats();
 
-nextQuestion();
+resetQueue();
 
 </script>
 
