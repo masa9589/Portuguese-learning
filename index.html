@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portuguese Review App</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="hero">
+      <h1>ポルトガル語 復習アプリ</h1>
+      <p>授業PDFベースの復習・苦手克服・学習記録</p>
+    </header>
+
+    <section class="dashboard">
+      <div class="dash-card">
+        <div class="dash-label">🔥 連続学習</div>
+        <div class="dash-value" id="streakDays">0日</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-label">今日</div>
+        <div class="dash-value" id="todayStats">0問 / 0分</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-label">累計</div>
+        <div class="dash-value" id="totalStats">0問</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-label">正解率</div>
+        <div class="dash-value" id="accuracyStats">0%</div>
+      </div>
+    
+      <div class="dash-card">
+        <div class="dash-label">🎯 今日の目標</div>
+        <div class="dash-value" id="goalStats">0 / 30問</div>
+      </div>
+
+      <div class="dash-card">
+        <div class="dash-label">✅ 今日の復習</div>
+        <div class="dash-value" id="reviewStats">完了</div>
+      </div>
+
+    </section>
+
+    <section class="card controls">
+      <label>授業回</label>
+      <select id="lessonSelect"></select>
+
+      <label>問題形式</label>
+      <select id="typeSelect">
+        <option value="all">全部</option>
+        <option value="vocab_ja_pt">単語（日→葡）</option>
+        <option value="vocab_pt_ja">単語（葡→日）</option>
+        <option value="fill">穴埋め</option>
+        <option value="translation">和訳</option>
+        <option value="phrase">短文・定型文</option>
+        <option value="composition">作文</option>
+        <option value="conversation">会話</option>
+      </select>
+
+      <label>出題モード</label>
+      <select id="modeSelect">
+        <option value="normal">通常</option>
+        <option value="weak">苦手優先</option>
+        <option value="recent">直近授業</option>
+        <option value="missed">間違い復習</option>
+      </select>
+
+      <button class="secondary" id="applyBtn">条件を反映</button>
+    </section>
+
+    <section class="card quiz">
+      <div class="meta">
+        <span id="lessonBadge">授業</span>
+        <span id="typeBadge">形式</span>
+        <span id="tagBadge">タグ</span>
+      </div>
+
+      <div class="question" id="question">問題</div>
+
+      <button class="primary" id="showBtn">答えを見る</button>
+      <div class="button-row">
+        <button class="correct" id="correctBtn">正解</button>
+        <button class="wrong" id="wrongBtn">不正解</button>
+      </div>
+      <button class="secondary" id="nextBtn">次の問題</button>
+
+      <div class="answer-block answer-below-actions" id="answerBlock">
+        <div class="answer-title">答え</div>
+        <div class="answer" id="answer">答え</div>
+        <div class="answer-title">解説</div>
+        <div class="explanation" id="explanation">解説</div>
+      </div>
+    </section>
+
+    <section class="card analysis">
+      <h2>苦手カテゴリ</h2>
+      <div id="weakAreas" class="weak-list">まだデータがありません。</div>
+    </section>
+
+    <section class="card">
+      <button class="danger" id="resetBtn">学習履歴をリセット</button>
+      <p class="note">履歴はこのスマホ/ブラウザ内に保存されます。別端末との同期はありません。</p>
+    </section>
+  </div>
+
+  <script src="questions.js"></script>
+  <script>
+    const STORAGE_KEY = "pt_full_review_stats_v1";
+    let queue = [];
+    let current = null;
+    let currentPool = [];
+    let queueSignature = "";
+
+    const todayKey = () => new Date().toISOString().slice(0,10);
+
+    let stats = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+      total: 0,
+      correct: 0,
+      wrong: 0,
+      perQuestion: {},
+      perLesson: {},
+      perType: {},
+      daily: {}
+    };
+
+    function saveStats(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+    }
+
+    function ensureToday(){
+      const d = todayKey();
+      if(!stats.daily[d]) stats.daily[d] = {seconds:0, total:0, correct:0, wrong:0, missed:{}, cleared:{}};
+      return stats.daily[d];
+    }
+
+    function buildLessonOptions(){
+      const select = document.getElementById("lessonSelect");
+      const lessons = [...new Map(QUESTIONS.map(q => [q.lesson, q.lessonTitle])).entries()]
+        .sort((a,b) => a[0].localeCompare(b[0]));
+      select.innerHTML = `<option value="all">全部</option>` + lessons.map(([id,title]) => {
+        return `<option value="${id}">${title}</option>`;
+      }).join("");
+    }
+
+    function getFilteredQuestions(){
+      const lesson = document.getElementById("lessonSelect").value;
+      const type = document.getElementById("typeSelect").value;
+      const mode = document.getElementById("modeSelect").value;
+
+      let pool = QUESTIONS.filter(q => {
+        const lessonMatch = lesson === "all" || q.lesson === lesson;
+        const typeMatch = type === "all" || q.type === type;
+        return lessonMatch && typeMatch;
+      });
+
+      if(mode === "recent"){
+        const dates = [...new Set(QUESTIONS.map(q => q.date).filter(Boolean))].sort().reverse().slice(0,3);
+        pool = pool.filter(q => dates.includes(q.date));
+      }
+
+      if(mode === "missed"){
+        const today = ensureToday();
+        pool = pool.filter(q => today.missed && today.missed[q.id] && !(today.cleared && today.cleared[q.id]));
+      }
+
+      if(mode === "weak"){
+        pool = weightWeak(pool);
+      }
+
+      return pool;
+    }
+
+    function weightWeak(pool){
+      const weighted = [];
+      pool.forEach(q => {
+        const r = stats.perQuestion[q.id] || {correct:0, wrong:0};
+        const weight = Math.min(8, 1 + r.wrong * 2 - Math.min(r.correct, 2));
+        const n = Math.max(1, weight);
+        for(let i=0; i<n; i++) weighted.push(q);
+      });
+      return weighted;
+    }
+
+    function shuffle(array){
+      for(let i=array.length-1; i>0; i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function resetQueue(){
+      currentPool = getFilteredQuestions();
+      queue = shuffle([...currentPool]);
+      queueSignature = getQueueSignature();
+      nextQuestion();
+      updateDashboard();
+    }
+
+    function getQueueSignature(){
+      return [
+        document.getElementById("lessonSelect").value,
+        document.getElementById("typeSelect").value,
+        document.getElementById("modeSelect").value
+      ].join("|");
+    }
+
+    function nextQuestion(){
+      const sig = getQueueSignature();
+      if(sig !== queueSignature){
+        currentPool = getFilteredQuestions();
+        queue = shuffle([...currentPool]);
+        queueSignature = sig;
+      }
+
+      if(queue.length === 0){
+        currentPool = getFilteredQuestions();
+        queue = shuffle([...currentPool]);
+      }
+
+      current = queue.pop();
+
+      const answerBlock = document.getElementById("answerBlock");
+      answerBlock.style.display = "none";
+      document.getElementById("showBtn").textContent = "答えを見る";
+
+      if(!current){
+        document.getElementById("question").textContent = "この条件では問題がありません。";
+        document.getElementById("answer").textContent = "";
+        document.getElementById("explanation").textContent = "";
+        document.getElementById("lessonBadge").textContent = "-";
+        document.getElementById("typeBadge").textContent = "-";
+        document.getElementById("tagBadge").textContent = "-";
+        return;
+      }
+
+      document.getElementById("lessonBadge").textContent = current.lessonTitle;
+      document.getElementById("typeBadge").textContent = typeLabel(current.type);
+      document.getElementById("tagBadge").textContent = (current.tags || []).slice(0,2).join(", ") || "-";
+      document.getElementById("question").textContent = current.q;
+      document.getElementById("answer").textContent = current.a;
+      document.getElementById("explanation").textContent = current.exp || "";
+      const explanationTitles = document.querySelectorAll(".answer-title");
+      if (explanationTitles.length > 1) {
+        explanationTitles[1].style.display = current.exp ? "block" : "none";
+      }
+      document.getElementById("explanation").style.display = current.exp ? "block" : "none";
+    }
+
+    function typeLabel(t){
+      return {
+        vocab_ja_pt:"単語（日→葡）",
+        vocab_pt_ja:"単語（葡→日）",
+        fill:"穴埋め",
+        translation:"和訳",
+        phrase:"短文・定型文",
+        composition:"作文",
+        conversation:"会話"
+      }[t] || t;
+    }
+
+    function showAnswer(){
+      const answerBlock = document.getElementById("answerBlock");
+      const isOpen = answerBlock.style.display === "block";
+      answerBlock.style.display = isOpen ? "none" : "block";
+      document.getElementById("showBtn").textContent = isOpen ? "答えを見る" : "答えを隠す";
+    }
+
+    function record(isCorrect){
+      if(!current) return;
+
+      const d = ensureToday();
+      stats.total++;
+      d.total++;
+
+      if(isCorrect){
+        stats.correct++;
+        d.correct++;
+        if(d.cleared) d.cleared[current.id] = true;
+        if(d.missed) delete d.missed[current.id];
+      } else {
+        stats.wrong++;
+        d.wrong++;
+        if(!d.cleared || !d.cleared[current.id]){
+          if(!d.missed) d.missed = {};
+          d.missed[current.id] = true;
+        }
+      }
+
+      if(!stats.perQuestion[current.id]) stats.perQuestion[current.id] = {correct:0, wrong:0, last:null};
+      if(!stats.perLesson[current.lesson]) stats.perLesson[current.lesson] = {correct:0, wrong:0, total:0};
+      if(!stats.perType[current.type]) stats.perType[current.type] = {correct:0, wrong:0, total:0};
+
+      const pq = stats.perQuestion[current.id];
+      const pl = stats.perLesson[current.lesson];
+      const pt = stats.perType[current.type];
+
+      pq.last = todayKey();
+      if(isCorrect) pq.correct++; else pq.wrong++;
+
+      pl.total++;
+      pt.total++;
+      if(isCorrect){ pl.correct++; pt.correct++; }
+      else { pl.wrong++; pt.wrong++; }
+
+      saveStats();
+      updateDashboard();
+      nextQuestion();
+    }
+
+    function updateDashboard(){
+      const today = ensureToday();
+      document.getElementById("todayStats").textContent =
+        `${today.total}問 / ${Math.floor(today.seconds/60)}分`;
+
+      document.getElementById("totalStats").textContent =
+        `${stats.total}問`;
+
+      const acc = stats.total ? Math.round(stats.correct / stats.total * 100) : 0;
+      document.getElementById("accuracyStats").textContent = `${acc}%`;
+      document.getElementById("streakDays").textContent = `🔥 ${calcStreak()}日`;
+
+      renderWeakAreas();
+
+      const reviewRemaining =
+        today.missed
+          ? Object.keys(today.missed).length
+          : 0;
+
+      document.getElementById("reviewStats").textContent =
+        reviewRemaining === 0
+          ? "完了"
+          : `${reviewRemaining}件`;
+
+      const goal = 30;
+      document.getElementById("goalStats").textContent =
+        `${today.total} / ${goal}問`;
+    }
+
+    function calcStreak(){
+      const days = Object.keys(stats.daily).sort().reverse();
+      let streak = 0;
+      let date = new Date();
+      for(;;){
+        const key = date.toISOString().slice(0,10);
+        const day = stats.daily[key];
+        if(day && (day.total > 0 || day.seconds >= 60)){
+          streak++;
+          date.setDate(date.getDate()-1);
+        } else {
+          break;
+        }
+      }
+      return streak;
+    }
+
+    function renderWeakAreas(){
+      const container = document.getElementById("weakAreas");
+      const rows = Object.entries(stats.perLesson || {}).map(([lesson, r]) => {
+        const title = (QUESTIONS.find(q => q.lesson === lesson) || {}).lessonTitle || lesson;
+        const total = r.total || 0;
+        const acc = total ? Math.round((r.correct || 0) / total * 100) : 0;
+        return {title, total, acc, wrong:r.wrong || 0};
+      }).filter(x => x.total >= 3)
+        .sort((a,b) => a.acc - b.acc || b.wrong - a.wrong)
+        .slice(0,5);
+
+      if(rows.length === 0){
+        container.textContent = "まだデータがありません。";
+        return;
+      }
+
+      container.innerHTML = rows.map(r => `
+        <div class="weak-item">
+          <span>${r.title}</span>
+          <strong>${r.acc}%</strong>
+        </div>
+      `).join("");
+    }
+
+    function resetStats(){
+      if(!confirm("学習履歴をリセットしますか？")) return;
+      stats = { total:0, correct:0, wrong:0, perQuestion:{}, perLesson:{}, perType:{}, daily:{} };
+      saveStats();
+      updateDashboard();
+      resetQueue();
+    }
+
+    document.getElementById("applyBtn").addEventListener("click", resetQueue);
+    document.getElementById("showBtn").addEventListener("click", showAnswer);
+    document.getElementById("correctBtn").addEventListener("click", () => record(true));
+    document.getElementById("wrongBtn").addEventListener("click", () => record(false));
+    document.getElementById("nextBtn").addEventListener("click", nextQuestion);
+    document.getElementById("resetBtn").addEventListener("click", resetStats);
+
+    setInterval(() => {
+      const today = ensureToday();
+      today.seconds++;
+      saveStats();
+      updateDashboard();
+    }, 1000);
+
+    buildLessonOptions();
+    ensureToday();
+    updateDashboard();
+    resetQueue();
+  </script>
+</body>
+</html>
