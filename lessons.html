@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>授業回 解説ページ</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="hero">
+      <h1>授業回 解説ページ</h1>
+      <p>各授業の文法ポイント・例文まとめ</p>
+      <p><a href="index.html">← 復習アプリに戻る</a></p>
+    </header>
+
+    <section class="card controls">
+      <label for="lessonGuideSelect">授業回</label>
+      <select id="lessonGuideSelect"></select>
+    </section>
+
+    <section class="card quiz lesson-guide">
+      <h2 id="guideTitle">授業回</h2>
+      <p id="guideSummary"></p>
+
+      <h3>ポイント</h3>
+      <ul id="guidePoints"></ul>
+
+      <h3>例文</h3>
+      <div id="guideExamples"></div>
+    </section>
+  </div>
+
+  <script src="lessons.js"></script>
+  <script>
+    const select = document.getElementById("lessonGuideSelect");
+    const title = document.getElementById("guideTitle");
+    const summary = document.getElementById("guideSummary");
+    const points = document.getElementById("guidePoints");
+    const examples = document.getElementById("guideExamples");
+
+    function esc(s){
+      return String(s || "").replace(/[&<>"']/g, m => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+      }[m]));
+    }
+
+    function render(){
+      const id = select.value;
+      const lesson = LESSONS.find(x => x.id === id) || LESSONS[0];
+      if(!lesson) return;
+
+      title.textContent = lesson.title || lesson.id;
+      summary.textContent = lesson.summary || "この授業回の要点を表示します。";
+
+      const ps = lesson.points || [];
+      points.innerHTML = ps.length
+        ? ps.map(p => `<li>${esc(p)}</li>`).join("")
+        : "<li>この授業回の問題データから要点を表示しています。</li>";
+
+      const exs = lesson.examples || [];
+      examples.innerHTML = exs.length
+        ? exs.map(e => `
+          <div class="example-card">
+            <div class="example-pt">${esc(e.pt)}</div>
+            <div class="example-ja">${esc(e.ja)}</div>
+          </div>
+        `).join("")
+        : "<p>この授業回の代表例を表示しています。</p>";
+    }
+
+    select.innerHTML = (LESSONS || []).map(l =>
+      `<option value="${esc(l.id)}">${esc(l.title || l.id)}</option>`
+    ).join("");
+
+    select.addEventListener("change", render);
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portuguese Review App</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="hero">
+      <h1>ポルトガル語 復習アプリ</h1>
+      <p>授業PDFベースの復習・苦手克服・学習記録</p>
+      <p><a href="lessons.html">授業回の解説を見る</a></p>
+    </header>
+
+    <section class="dashboard">
+      <div class="dash-card">
+        <div class="dash-label">🔥 継続</div>
+        <div class="dash-value" id="streakDays">0日</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-label">今日</div>
+        <div class="dash-value" id="todayStats">0問 / 0分</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-label">直近7日</div>
+        <div class="dash-value" id="weekStats">0問 / 0分</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-label">累計</div>
+        <div class="dash-value" id="totalStats">0問 / 0分</div>
+      </div>
+    </section>
+
+    <section class="card controls">
+      <label for="lessonSelect">授業回</label>
+      <select id="lessonSelect">
+        <option value="all">読み込み中...</option>
+      </select>
+
+      <label for="typeSelect">問題形式</label>
+      <select id="typeSelect">
+        <option value="all">全部</option>
+        <option value="vocab_ja_pt">単語（日→葡）</option>
+        <option value="vocab_pt_ja">単語（葡→日）</option>
+        <option value="fill">穴埋め</option>
+        <option value="translation">和訳</option>
+        <option value="phrase">短文・定型文</option>
+        <option value="composition">作文</option>
+        <option value="conversation">会話</option>
+      </select>
+
+      <label for="modeSelect">出題モード</label>
+      <select id="modeSelect">
+        <option value="normal">通常</option>
+        <option value="weak">苦手優先</option>
+        <option value="recent">直近授業</option>
+        <option value="missed">間違い復習</option>
+      </select>
+
+      <button class="secondary" id="applyBtn">条件を反映</button>
+    </section>
+
+    <section class="card quiz">
+      <div class="cycle-status" id="cycleStatus"></div>
+
+      <div class="question" id="question">問題</div>
+
+      <div class="answer-block" id="answerBlock" style="display:none;">
+        <div class="answer-title">答え</div>
+        <div class="answer" id="answer">答え</div>
+        <div class="answer-title" id="explanationTitle">解説</div>
+        <div class="explanation" id="explanation">解説</div>
+      </div>
+
+      <div class="action-bar">
+        <button class="primary" id="showBtn">答えを見る</button>
+        <div class="button-stack">
+          <button class="correct" id="correctBtn">正解</button>
+          <button class="wrong" id="wrongBtn">不正解</button>
+        </div>
+        <button class="secondary" id="nextBtn">次の問題</button>
+      </div>
+    </section>
+
+    <section class="card analysis">
+      <h2>苦手カテゴリ</h2>
+      <div id="weakAreas" class="weak-list">まだデータがありません。</div>
+    </section>
+
+    <section class="card reset">
+      <button class="danger" id="resetBtn">学習履歴をリセット</button>
+      <p>履歴はこのスマホ/ブラウザ内に保存されます。別端末との同期はありません。</p>
+    </section>
+  </div>
+
+  <script src="questions.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
