@@ -1,2 +1,0 @@
-# Portuguese-learning
-Portuguese-Quiz
